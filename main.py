@@ -1,9 +1,11 @@
 from tensorflow import keras
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import LSTM, GRU, Dense, Activation, Dropout, BatchNormalization, LeakyReLU
+import tensorflow.keras as keras 
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.initializers import TruncatedNormal
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
+
 
 import glob
 import os
@@ -11,9 +13,14 @@ import math
 import numpy as np
 from PIL import Image
 
-w = 128
-h = 128
+# チャンネル数
+channels = 3
 
+# 学習データ・入力画像のサイズ
+w = 512
+h = 512
+
+# ラベルデータ・出力画像のサイズ
 ow = 512
 oh = 512
 
@@ -26,23 +33,16 @@ def load_image( file_path, resize=True ):
         
         x = np.array( im )
         x = x / 255.0
-        x = x.flatten()
+        # x = x.flatten()
     
     return x
 
 def save_image( x, file_path ):
-    x = x.reshape( [ oh, ow, 3 ] )
+    x = x.reshape( [ oh, ow, channels ] )
     x = np.uint8( x * 255 )
     
     im = Image.fromarray( x )
     im.save( file_path )
-
-im = load_image( "./src.png", True )
-
-path_list = glob.glob( "./x/*.png" )
-
-path_list_train = path_list[:-50]
-path_list_val = path_list[-50:]
 
 class Generator( keras.utils.Sequence ):
     
@@ -89,10 +89,18 @@ class SaveImageCallback( keras.callbacks.Callback ):
         y = model.predict( np.array( [ im ] ) )
         save_image( y[ 0 ], "./output/" + str( epoch ) + ".png" )
 
+im = load_image( "./src.png", True )
+
+path_list = glob.glob( "./x/*.png" )
+
+path_list_train = path_list[:-50]
+path_list_val = path_list[-50:]
+
 model = Sequential()
-model.add( Dense( 64, input_dim=w * h * 3 ) )
-model.add( Dense( ow * oh * 3,  activation="sigmoid" ) )
-# model.add( Dense( w * h * 3, activation="sigmoid" ) )
+model.add( keras.layers.Conv2D( 3, input_shape=( h, w, channels ), kernel_size=( 9, 9 ), padding="same", activation="relu" ) )
+# model.add( keras.layers.Flatten() )
+# model.add( keras.layers.Reshape( ( oh, ow, channels ) ) )
+# model.add( Dense( w * h * channels, activation="sigmoid" ) )
 # model.add( Activation( "sigmoid" ) )
 # model.add( Dense( 100, activation="sigmoid" ) )
 model.compile( loss='mean_squared_error', optimizer='adam' ) # 回帰問題
