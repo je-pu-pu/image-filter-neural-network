@@ -3,3 +3,6 @@ y/
 output/
 output.backup/
 models/
+.vscode/
+*.png
+*.mp4
